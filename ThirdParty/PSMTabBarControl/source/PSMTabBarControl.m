@@ -2109,12 +2109,33 @@ static CFAbsoluteTime gDragMoveFirstTime = 0;
 
 - (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
     _haveInitialDragLocation = NO;
+
+    // Check if dropping on a group header
+    NSPoint dropPoint = [self convertPoint:[sender draggingLocation] fromView:nil];
+    PSMTabGroup *targetGroup = [self groupForPoint:dropPoint];
+
+    if (targetGroup && [[[sender draggingPasteboard] types] indexOfObject:@"com.iterm2.psm.controlitem"] != NSNotFound) {
+        // Get the dragged tab identifier
+        PSMTabBarCell *draggedCell = [[PSMTabDragAssistant sharedDragAssistant] draggedCell];
+        if (draggedCell) {
+            id tabIdentifier = [[draggedCell representedObject] identifier];
+            DLog(@"Dropping tab %@ onto group %@ (name=%@)", tabIdentifier, targetGroup.identifier, targetGroup.name);
+
+            // Notify data source about the drop on group
+            if ([_tabGroupDataSource respondsToSelector:@selector(tabBarControl:addTabWithIdentifier:toGroup:)]) {
+                [_tabGroupDataSource tabBarControl:self addTabWithIdentifier:tabIdentifier toGroup:targetGroup];
+            }
+        }
+        [[PSMTabDragAssistant sharedDragAssistant] performDragOperation:sender];
+        return YES;
+    }
+
     if ([[[sender draggingPasteboard] types] indexOfObject:@"com.iterm2.psm.controlitem"] != NSNotFound ||
         [self _delegateAcceptsSender:sender]) {
         [[PSMTabDragAssistant sharedDragAssistant] performDragOperation:sender];
     } else if ([[self delegate] respondsToSelector:@selector(tabView:acceptedDraggingInfo:onTabViewItem:)]) {
         //forward the drop to the delegate
-        [[self delegate] tabView:_tabView acceptedDraggingInfo:sender onTabViewItem:[[self cellForPoint:[self convertPoint:[sender draggingLocation] fromView:nil] cellFrame:nil] representedObject]];
+        [[self delegate] tabView:_tabView acceptedDraggingInfo:sender onTabViewItem:[[self cellForPoint:dropPoint cellFrame:nil] representedObject]];
     }
     return YES;
 }
@@ -2538,6 +2559,20 @@ static CFAbsoluteTime gDragMoveFirstTime = 0;
                 *outFrame = [cell frame];
             }
             return cell;
+        }
+    }
+    return nil;
+}
+
+- (PSMTabGroup *)groupForPoint:(NSPoint)point {
+    if (!_tabGroupDataSource) {
+        return nil;
+    }
+
+    NSArray<PSMTabGroup *> *groups = [_tabGroupDataSource tabGroupsForTabBarControl:self];
+    for (PSMTabGroup *group in groups) {
+        if (NSPointInRect(point, group.headerFrame)) {
+            return group;
         }
     }
     return nil;

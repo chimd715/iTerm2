@@ -201,7 +201,7 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 
 | # | 작업 | 상태 | 설명 |
 |---|------|------|------|
-| 4 | 드래그 앤 드롭으로 그룹에 탭 추가/제거 | ⏳ 대기 | 탭 드래그 시 그룹 헤더 위에 드롭 처리 |
+| 4 | 드래그 앤 드롭으로 그룹에 탭 추가/제거 | ✅ 완료 | 탭 드래그 시 그룹 헤더 위에 드롭 처리 |
 | 5 | Arrangement 저장/복원 검증 | ⏳ 대기 | 창 복원 시 그룹 유지 확인 |
 | 6 | 탭 순서 재정렬 | ⏳ 대기 | 같은 그룹 탭이 연속 배치되도록 |
 
@@ -236,17 +236,19 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 - **상태**: ✅ 완료
 - **시작일**: 2025-02-06
 - **완료일**: 2025-02-06
-- **커밋**: (커밋 후 업데이트)
+- **커밋**: cf934479d
 - **변경 파일**:
   - `PSMYosemiteTabStyle.m`: `drawTabGroupsForBar:`, `drawGroupHeaderForGroup:`, `drawGroupUnderlineForGroup:`에 DLog 추가
   - `PSMTabBarControl.m`: `totalGroupHeaderWidth`, `_setupCells:`에 DLog 추가
 
 ### Task 4: 드래그 앤 드롭으로 그룹에 탭 추가/제거
-- **상태**: ⏳ 대기
-- **시작일**: -
-- **완료일**: -
-- **커밋**: -
-- **변경 파일**: -
+- **상태**: ✅ 완료
+- **시작일**: 2025-02-06
+- **완료일**: 2025-02-06
+- **커밋**: (커밋 후 업데이트)
+- **변경 파일**:
+  - `PSMTabBarControl.m`: `groupForPoint:` 메서드 추가, `performDragOperation:` 수정
+  - `PseudoTerminal+TabGroups.m`: `addTabWithIdentifier:toGroup:` 델리게이트 메서드 추가
 
 ### Task 5: Arrangement 저장/복원 검증
 - **상태**: ⏳ 대기

@@ -486,6 +486,31 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
     }
 }
 
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl addTabWithIdentifier:(id)identifier toGroup:(PSMTabGroup *)group {
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (!itermGroup) {
+        return;
+    }
+
+    // Find the tab with this identifier
+    PTYTab *tabToAdd = nil;
+    for (PTYTab *tab in self.tabs) {
+        if ([tab.identifier isEqual:identifier]) {
+            tabToAdd = tab;
+            break;
+        }
+    }
+
+    if (tabToAdd) {
+        // Remove from existing group if any
+        [self.tabGroupManager removeTabFromGroup:tabToAdd];
+
+        // Add to new group
+        [self.tabGroupManager addTab:tabToAdd toGroup:itermGroup];
+        [tabBarControl update];
+    }
+}
+
 #pragma mark - PSMTabGroup Conversion
 
 - (PSMTabGroup *)psmTabGroupFromITermTabGroup:(iTermTabGroup *)itermGroup {
