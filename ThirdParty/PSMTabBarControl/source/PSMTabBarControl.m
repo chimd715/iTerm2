@@ -209,10 +209,12 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
 
 - (CGFloat)totalGroupHeaderWidth {
     if (!_tabGroupDataSource) {
+        DLog(@"totalGroupHeaderWidth: No tabGroupDataSource");
         return 0;
     }
 
     NSArray<PSMTabGroup *> *groups = [_tabGroupDataSource tabGroupsForTabBarControl:self];
+    DLog(@"totalGroupHeaderWidth: Found %lu groups", (unsigned long)groups.count);
     if (groups.count == 0) {
         return 0;
     }
@@ -226,10 +228,13 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
         headerSpacing = [_style groupHeaderToTabSpacing];
 
         for (PSMTabGroup *group in groups) {
-            totalWidth += [_style widthForGroupHeader:group] + headerSpacing;
+            CGFloat width = [_style widthForGroupHeader:group];
+            DLog(@"Group %@ (name=%@): width=%f", group.identifier, group.name, width);
+            totalWidth += width + headerSpacing;
         }
     }
 
+    DLog(@"totalGroupHeaderWidth: Returning %f", totalWidth);
     return totalWidth;
 }
 
@@ -1485,6 +1490,7 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
 
             // If in collapsed group, hide the cell and continue
             if (isInCollapsedGroup && containingGroup) {
+                DLog(@"Tab %@ is in collapsed group %@ - hiding", tabIdentifier, containingGroup.identifier);
                 // First cell of collapsed group still needs header space allocated
                 if (![processedGroups containsObject:containingGroup.identifier]) {
                     CGFloat headerWidth = [_style widthForGroupHeader:containingGroup];
@@ -1496,6 +1502,7 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
                                                    headerWidth,
                                                    cellRect.size.height);
                     containingGroup.headerFrame = headerRect;
+                    DLog(@"First cell of collapsed group %@: headerFrame=%@", containingGroup.identifier, NSStringFromRect(headerRect));
 
                     [processedGroups addObject:containingGroup.identifier];
                 }
@@ -1514,6 +1521,8 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
                 if (![processedGroups containsObject:containingGroup.identifier]) {
                     // This is the first cell of this group - add header space
                     CGFloat headerWidth = [_style widthForGroupHeader:containingGroup];
+                    DLog(@"First cell of group %@ (name=%@): adding header width=%f + spacing=%f",
+                         containingGroup.identifier, containingGroup.name, headerWidth, groupHeaderSpacing);
                     cellRect.origin.x += headerWidth + groupHeaderSpacing;
 
                     // Store header frame in group for drawing
@@ -1522,6 +1531,7 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
                                                    headerWidth,
                                                    cellRect.size.height);
                     containingGroup.headerFrame = headerRect;
+                    DLog(@"Group %@ headerFrame=%@", containingGroup.identifier, NSStringFromRect(headerRect));
 
                     [processedGroups addObject:containingGroup.identifier];
                 }

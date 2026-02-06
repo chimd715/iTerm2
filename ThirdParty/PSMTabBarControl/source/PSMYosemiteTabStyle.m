@@ -1275,12 +1275,16 @@ const void *PSMTabStyleDarkColorKey = "dark";
 }
 
 - (void)drawTabGroupsForBar:(PSMTabBarControl *)bar inRect:(NSRect)rect clipRect:(NSRect)clipRect {
+    DLog(@"drawTabGroupsForBar called with rect=%@ clipRect=%@", NSStringFromRect(rect), NSStringFromRect(clipRect));
+
     id<PSMTabGroupDataSource> dataSource = bar.tabGroupDataSource;
     if (!dataSource) {
+        DLog(@"No tabGroupDataSource - returning");
         return;
     }
 
     NSArray<PSMTabGroup *> *groups = [dataSource tabGroupsForTabBarControl:bar];
+    DLog(@"Found %lu tab groups", (unsigned long)groups.count);
     if (groups.count == 0) {
         return;
     }
@@ -1307,16 +1311,25 @@ const void *PSMTabStyleDarkColorKey = "dark";
         }
 
         if (!foundFirst) {
+            DLog(@"Group %@ has no visible cells - skipping", group.identifier);
             continue;
         }
 
+        DLog(@"Group %@ (name=%@): firstCellRect=%@ lastCellRect=%@ headerFrame=%@ collapsed=%@",
+             group.identifier, group.name, NSStringFromRect(firstCellRect), NSStringFromRect(lastCellRect),
+             NSStringFromRect(group.headerFrame), group.collapsed ? @"YES" : @"NO");
+
         // Draw group header using the pre-calculated frame from layout
         if (group.headerFrame.size.width > 0) {
+            DLog(@"Drawing header for group %@", group.identifier);
             [self drawGroupHeaderForGroup:group inRect:group.headerFrame collapsed:group.collapsed];
+        } else {
+            DLog(@"Group %@ has zero-width headerFrame - skipping header draw", group.identifier);
         }
 
         // Draw underline beneath grouped tabs
         if (!group.collapsed && group.color) {
+            DLog(@"Drawing underline for group %@", group.identifier);
             [self drawGroupUnderlineForGroup:group fromRect:firstCellRect toRect:lastCellRect];
         }
     }
@@ -1376,11 +1389,16 @@ static const CGFloat kPSMTabGroupUnderlineHeight = 3.0;
 static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 
 - (void)drawGroupHeaderForGroup:(PSMTabGroup *)group inRect:(NSRect)rect collapsed:(BOOL)collapsed {
+    DLog(@"drawGroupHeaderForGroup: %@ (name=%@) rect=%@ collapsed=%@",
+         group.identifier, group.name, NSStringFromRect(rect), collapsed ? @"YES" : @"NO");
+
     if (!group) {
+        DLog(@"Group is nil - returning");
         return;
     }
 
     NSColor *groupColor = group.color ?: [PSMTabGroup colorForType:PSMTabGroupColorTypeGrey];
+    DLog(@"Using color: %@", groupColor);
 
     // Draw rounded rect background (Chrome-like pill shape)
     NSRect headerRect = NSInsetRect(rect, 2, 2);
@@ -1468,11 +1486,16 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 }
 
 - (void)drawGroupUnderlineForGroup:(PSMTabGroup *)group fromRect:(NSRect)startRect toRect:(NSRect)endRect {
+    DLog(@"drawGroupUnderlineForGroup: %@ (name=%@) startRect=%@ endRect=%@",
+         group.identifier, group.name, NSStringFromRect(startRect), NSStringFromRect(endRect));
+
     if (!group || !group.color) {
+        DLog(@"Group or color is nil - returning");
         return;
     }
 
     NSColor *groupColor = group.color;
+    DLog(@"Using color: %@", groupColor);
 
     // Draw underline beneath all tabs in the group
     CGFloat underlineY = NSMaxY(startRect) - kPSMTabGroupUnderlineHeight - 1;
