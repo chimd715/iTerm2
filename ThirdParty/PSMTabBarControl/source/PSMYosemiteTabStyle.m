@@ -1310,16 +1310,10 @@ const void *PSMTabStyleDarkColorKey = "dark";
             continue;
         }
 
-        // Calculate group header frame dynamically based on first cell position
-        CGFloat headerWidth = [self widthForGroupHeader:group];
-        CGFloat headerHeight = [self groupHeaderHeight];
-        NSRect headerRect = NSMakeRect(NSMinX(firstCellRect),
-                                        NSMinY(firstCellRect) - headerHeight - [self groupHeaderToTabSpacing],
-                                        headerWidth,
-                                        headerHeight);
-
-        // Draw group header above the first tab
-        [self drawGroupHeaderForGroup:group inRect:headerRect collapsed:group.collapsed];
+        // Draw group header using the pre-calculated frame from layout
+        if (group.headerFrame.size.width > 0) {
+            [self drawGroupHeaderForGroup:group inRect:group.headerFrame collapsed:group.collapsed];
+        }
 
         // Draw underline beneath grouped tabs
         if (!group.collapsed && group.color) {

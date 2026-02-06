@@ -200,7 +200,37 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
                                                                    addTabButton:self.showAddTabButton];
     const CGFloat leftMargin = [_style leftMarginForTabBarControl];
     width = width - leftMargin - rightMargin;
+
+    // Subtract space needed for group headers
+    width -= [self totalGroupHeaderWidth];
+
     return width;
+}
+
+- (CGFloat)totalGroupHeaderWidth {
+    if (!_tabGroupDataSource) {
+        return 0;
+    }
+
+    NSArray<PSMTabGroup *> *groups = [_tabGroupDataSource tabGroupsForTabBarControl:self];
+    if (groups.count == 0) {
+        return 0;
+    }
+
+    CGFloat totalWidth = 0;
+    CGFloat headerSpacing = 0;
+
+    // Check if style supports group headers
+    if ([_style respondsToSelector:@selector(widthForGroupHeader:)] &&
+        [_style respondsToSelector:@selector(groupHeaderToTabSpacing)]) {
+        headerSpacing = [_style groupHeaderToTabSpacing];
+
+        for (PSMTabGroup *group in groups) {
+            totalWidth += [_style widthForGroupHeader:group] + headerSpacing;
+        }
+    }
+
+    return totalWidth;
 }
 
 - (NSRect)genericCellRectWithOverflow:(BOOL)withOverflow {
@@ -1416,11 +1446,48 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
     NSMenu *overflowMenu = nil;
     const CGFloat intercellSpacing = _style.intercellSpacing;
 
+    // Get tab groups for header layout
+    NSArray<PSMTabGroup *> *groups = nil;
+    NSMutableSet<NSString *> *processedGroups = [NSMutableSet set];
+    CGFloat groupHeaderSpacing = 0;
+    BOOL supportsGroupHeaders = NO;
+
+    if (_tabGroupDataSource &&
+        [_style respondsToSelector:@selector(widthForGroupHeader:)] &&
+        [_style respondsToSelector:@selector(groupHeaderToTabSpacing)]) {
+        groups = [_tabGroupDataSource tabGroupsForTabBarControl:self];
+        groupHeaderSpacing = [_style groupHeaderToTabSpacing];
+        supportsGroupHeaders = YES;
+    }
+
     // Set up cells with frames and rects
     for (int i = 0; i < cellCount; i++) {
         PSMTabBarCell *cell = [_cells objectAtIndex:i];
         int tabState = 0;
         if (i < numberOfVisibleCells) {
+            // Check if this cell is the first in a group and add header space
+            if (supportsGroupHeaders && groups.count > 0) {
+                id tabIdentifier = [[cell representedObject] identifier];
+                for (PSMTabGroup *group in groups) {
+                    if ([group containsTabIdentifier:tabIdentifier] &&
+                        ![processedGroups containsObject:group.identifier]) {
+                        // This is the first cell of this group - add header space
+                        CGFloat headerWidth = [_style widthForGroupHeader:group];
+                        cellRect.origin.x += headerWidth + groupHeaderSpacing;
+
+                        // Store header frame in group for drawing
+                        NSRect headerRect = NSMakeRect(cellRect.origin.x - headerWidth - groupHeaderSpacing,
+                                                       cellRect.origin.y,
+                                                       headerWidth,
+                                                       cellRect.size.height);
+                        group.headerFrame = headerRect;
+
+                        [processedGroups addObject:group.identifier];
+                        break;
+                    }
+                }
+            }
+
             // set cell frame
             if ([self orientation] == PSMTabBarHorizontalOrientation) {
                 cellRect.size.width = [[newValues objectAtIndex:i] floatValue];
