@@ -1,4 +1,5 @@
 #import "PseudoTerminal+Private.h"
+#import "PseudoTerminal+TabGroups.h"
 #import "PseudoTerminal+TouchBar.h"
 #import "PseudoTerminal+WindowStyle.h"
 #import "PseudoTerminal.h"
@@ -745,6 +746,7 @@ typedef NS_ENUM(int, iTermShouldHaveTitleSeparator) {
     }
 
     [self updateTabBarStyle];
+    [self connectTabBarToTabGroups];
     self.window.delegate = self;
 
     [[NSNotificationCenter defaultCenter] addObserver:self
@@ -7375,6 +7377,16 @@ hidingToolbeltShouldResizeWindow:(BOOL)hidingToolbeltShouldResizeWindow
     [item setView:labelTrackView];
     [item setRepresentedObject:tabViewItem];
     [rootMenu addItem:item];
+
+    // Add Tab Group menu items
+    [rootMenu addItem:[NSMenuItem separatorItem]];
+
+    // Get tab group context menu items
+    NSMenu *tabGroupMenu = [self tabGroupContextMenuForTab:tab];
+    for (NSMenuItem *groupItem in [tabGroupMenu.itemArray copy]) {
+        [tabGroupMenu removeItem:groupItem];
+        [rootMenu addItem:groupItem];
+    }
 
     for (NSMenuItem *item in rootMenu.itemArray) {
         item.target = self;

@@ -6,10 +6,13 @@
 //
 
 #import "PseudoTerminal+TabGroups.h"
+#import "PseudoTerminal+Private.h"
 #import "iTermTabGroup.h"
 #import "iTermTabGroupManager.h"
 #import "iTermTabGroupColorPickerViewController.h"
 #import "iTermTabGroupNameEditor.h"
+#import "iTermRootTerminalView.h"
+#import "PSMTabGroup.h"
 #import "PTYTab.h"
 #import "iTermController.h"
 #import <objc/runtime.h>
@@ -42,9 +45,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 
     // For now, create a group with just the current tab
     // In a full implementation, this would include all selected tabs
-    return [self createTabGroupWithTabs:@[currentTab]
-                                   name:@"New Group"
-                                  color:[[iTermTabGroup predefinedColors] firstObject]];
+    iTermTabGroup *group = [self createTabGroupWithTabs:@[currentTab]
+                                                   name:@"New Group"
+                                                  color:[[iTermTabGroup predefinedColors] firstObject]];
+    return group;
 }
 
 - (iTermTabGroup *)createTabGroupWithTabs:(NSArray<PTYTab *> *)tabs
@@ -392,8 +396,122 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 
 - (NSView *)tabBarView {
     // Return the tab bar control view
-    // This is a simplified accessor - the actual implementation would access the real tab bar
-    return nil;  // Placeholder - would return actual tab bar view
+    return self.contentView.tabBarControl;
+}
+
+#pragma mark - PSMTabGroupDataSource
+
+- (NSArray<PSMTabGroup *> *)tabGroupsForTabBarControl:(PSMTabBarControl *)tabBarControl {
+    NSMutableArray<PSMTabGroup *> *psmGroups = [NSMutableArray array];
+
+    for (iTermTabGroup *itermGroup in self.tabGroupManager.tabGroups) {
+        PSMTabGroup *psmGroup = [self psmTabGroupFromITermTabGroup:itermGroup];
+        if (psmGroup) {
+            [psmGroups addObject:psmGroup];
+        }
+    }
+
+    return psmGroups;
+}
+
+- (PSMTabGroup *)tabBarControl:(PSMTabBarControl *)tabBarControl groupForTabWithIdentifier:(id)identifier {
+    // identifier is the tab's identifier (PTYTab.identifier)
+    NSString *tabGUID = nil;
+
+    // Find the tab GUID from the identifier
+    for (PTYTab *tab in [self tabs]) {
+        if ([tab.identifier isEqual:identifier]) {
+            tabGUID = tab.stringUniqueIdentifier;
+            break;
+        }
+    }
+
+    if (!tabGUID) {
+        return nil;
+    }
+
+    // Find the group containing this tab
+    for (iTermTabGroup *itermGroup in self.tabGroupManager.tabGroups) {
+        if ([itermGroup containsTabWithGUID:tabGUID]) {
+            return [self psmTabGroupFromITermTabGroup:itermGroup];
+        }
+    }
+
+    return nil;
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl didClickGroupHeader:(PSMTabGroup *)group {
+    // Find the corresponding iTermTabGroup
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (itermGroup) {
+        [self toggleCollapseTabGroup:itermGroup];
+    }
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl createGroupForTabWithIdentifier:(id)identifier {
+    // Find the tab and create a group for it
+    for (PTYTab *tab in [self tabs]) {
+        if ([tab.identifier isEqual:identifier]) {
+            [self createTabGroupWithTabs:@[tab] name:@"New Group" color:nil];
+            break;
+        }
+    }
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl renameGroup:(PSMTabGroup *)group {
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (itermGroup) {
+        [self renameTabGroup:itermGroup];
+    }
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl changeColorForGroup:(PSMTabGroup *)group {
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (itermGroup) {
+        [self changeColorOfTabGroup:itermGroup];
+    }
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl ungroupGroup:(PSMTabGroup *)group {
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (itermGroup) {
+        [self ungroupTabGroup:itermGroup];
+    }
+}
+
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl closeGroup:(PSMTabGroup *)group {
+    iTermTabGroup *itermGroup = [self.tabGroupManager groupWithGUID:group.identifier];
+    if (itermGroup) {
+        [self closeTabGroup:itermGroup];
+    }
+}
+
+#pragma mark - PSMTabGroup Conversion
+
+- (PSMTabGroup *)psmTabGroupFromITermTabGroup:(iTermTabGroup *)itermGroup {
+    if (!itermGroup) {
+        return nil;
+    }
+
+    PSMTabGroup *psmGroup = [[PSMTabGroup alloc] initWithIdentifier:itermGroup.guid
+                                                               name:itermGroup.name];
+    psmGroup.color = itermGroup.color;
+    psmGroup.collapsed = itermGroup.collapsed;
+
+    // Add tab identifiers
+    for (NSString *tabGUID in itermGroup.tabGUIDs) {
+        PTYTab *tab = [self tabWithGUID:tabGUID];
+        if (tab && tab.identifier) {
+            [psmGroup addTabIdentifier:tab.identifier];
+        }
+    }
+
+    return psmGroup;
+}
+
+- (void)connectTabBarToTabGroups {
+    PSMTabBarControl *tabBar = self.contentView.tabBarControl;
+    tabBar.tabGroupDataSource = (id<PSMTabGroupDataSource>)self;
 }
 
 @end

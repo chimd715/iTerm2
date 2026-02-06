@@ -19,11 +19,11 @@ static const CGFloat kMinimumNameWidth = 30.0;
 
 #pragma mark - Initialization
 
-- (instancetype)initWithTabGroup:(iTermTabGroup *)group controlView:(PSMTabBarControl *)controlView {
+- (instancetype)initWithTabGroup:(iTermTabGroup *)group controlView:(PSMTabBarControl *)tabBarControl {
     self = [super init];
     if (self) {
         _tabGroup = group;
-        _controlView = controlView;
+        _tabBarControl = tabBarControl;
     }
     return self;
 }
@@ -256,7 +256,7 @@ static const CGFloat kMinimumNameWidth = 30.0;
 #pragma mark - Mouse Events
 
 - (void)mouseDown:(NSEvent *)event {
-    NSPoint point = [self.controlView convertPoint:event.locationInWindow fromView:nil];
+    NSPoint point = [self.tabBarControl convertPoint:event.locationInWindow fromView:nil];
 
     if ([self isPointInCollapseButton:point]) {
         [self.delegate tabGroupHeaderCell:self didToggleCollapseForGroup:self.tabGroup];
@@ -266,7 +266,7 @@ static const CGFloat kMinimumNameWidth = 30.0;
 }
 
 - (void)mouseDoubleClick:(NSEvent *)event {
-    NSPoint point = [self.controlView convertPoint:event.locationInWindow fromView:nil];
+    NSPoint point = [self.tabBarControl convertPoint:event.locationInWindow fromView:nil];
 
     if ([self isPointInNameArea:point]) {
         [self.delegate tabGroupHeaderCell:self didRequestRenameForGroup:self.tabGroup];

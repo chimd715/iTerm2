@@ -45,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, weak) id<PSMTabStyle> style;
 
 // Tab bar control reference
-@property (nonatomic, weak) PSMTabBarControl *controlView;
+@property (nonatomic, weak) PSMTabBarControl *tabBarControl;
 
 // Display properties
 @property (nonatomic, readonly) CGFloat minimumWidth;

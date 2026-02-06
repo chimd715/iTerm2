@@ -7,6 +7,7 @@
 
 #import "iTermTabGroupColorPickerViewController.h"
 #import "iTermTabGroup.h"
+#import <objc/runtime.h>
 
 static const CGFloat kColorButtonSize = 28.0;
 static const CGFloat kColorButtonSpacing = 8.0;

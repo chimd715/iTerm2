@@ -6,14 +6,16 @@
 //
 
 #import "PseudoTerminal.h"
+#import "PSMTabBarControl.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @class iTermTabGroup;
 @class iTermTabGroupManager;
 @class PTYTab;
+@class PSMTabGroup;
 
-@interface PseudoTerminal (TabGroups)
+@interface PseudoTerminal (TabGroups) <PSMTabGroupDataSource>
 
 // The tab group manager for this window
 @property (nonatomic, readonly) iTermTabGroupManager *tabGroupManager;
