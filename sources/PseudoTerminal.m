@@ -3752,6 +3752,10 @@ ITERM_WEAKLY_REFERENCEABLE
     }
     [_contentView updateToolbeltForWindow:self.window];
     [self updateTouchBarFunctionKeyLabels];
+
+    // Restore tab groups from arrangement
+    [self restoreTabGroupsFromArrangement:arrangement];
+
     return YES;
 }
 
@@ -3904,7 +3908,7 @@ ITERM_WEAKLY_REFERENCEABLE
                         encoder:(id<iTermEncoderAdapter>)result {
     NSRect rect = [[self window] frame];
 
-    return [PseudoTerminal populateArrangementWith:tabsOrSession
+    BOOL success = [PseudoTerminal populateArrangementWith:tabsOrSession
                                  includingContents:includeContents
                                            encoder:result
                                       terminalGuid:self.terminalGuid
@@ -3932,6 +3936,16 @@ ITERM_WEAKLY_REFERENCEABLE
                                                tab:nil
                                        profileGuid:[[[[iTermHotKeyController sharedInstance] profileHotKeyForWindowController:self] profile] objectForKey:KEY_GUID]
                                        isMaximized:[self isMaximized]];
+
+    // Add tab groups to the arrangement
+    if (success && self.tabGroupManager) {
+        NSDictionary *groupArrangement = [self.tabGroupManager arrangement];
+        if (groupArrangement) {
+            result[TERMINAL_ARRANGEMENT_TAB_GROUPS] = groupArrangement;
+        }
+    }
+
+    return success;
 }
 
 + (BOOL)populateArrangementWith:(iTermOr<NSArray<PTYTab *> *, PTYSession *> *)tabsOrSession
