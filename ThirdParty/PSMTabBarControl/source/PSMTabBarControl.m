@@ -1465,26 +1465,65 @@ PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness = @"
         PSMTabBarCell *cell = [_cells objectAtIndex:i];
         int tabState = 0;
         if (i < numberOfVisibleCells) {
-            // Check if this cell is the first in a group and add header space
+            id tabIdentifier = [[cell representedObject] identifier];
+
+            // Check if this tab belongs to a collapsed group
+            BOOL isInCollapsedGroup = NO;
+            PSMTabGroup *containingGroup = nil;
+
             if (supportsGroupHeaders && groups.count > 0) {
-                id tabIdentifier = [[cell representedObject] identifier];
                 for (PSMTabGroup *group in groups) {
-                    if ([group containsTabIdentifier:tabIdentifier] &&
-                        ![processedGroups containsObject:group.identifier]) {
-                        // This is the first cell of this group - add header space
-                        CGFloat headerWidth = [_style widthForGroupHeader:group];
-                        cellRect.origin.x += headerWidth + groupHeaderSpacing;
-
-                        // Store header frame in group for drawing
-                        NSRect headerRect = NSMakeRect(cellRect.origin.x - headerWidth - groupHeaderSpacing,
-                                                       cellRect.origin.y,
-                                                       headerWidth,
-                                                       cellRect.size.height);
-                        group.headerFrame = headerRect;
-
-                        [processedGroups addObject:group.identifier];
+                    if ([group containsTabIdentifier:tabIdentifier]) {
+                        containingGroup = group;
+                        if (group.collapsed) {
+                            isInCollapsedGroup = YES;
+                        }
                         break;
                     }
+                }
+            }
+
+            // If in collapsed group, hide the cell and continue
+            if (isInCollapsedGroup && containingGroup) {
+                // First cell of collapsed group still needs header space allocated
+                if (![processedGroups containsObject:containingGroup.identifier]) {
+                    CGFloat headerWidth = [_style widthForGroupHeader:containingGroup];
+                    cellRect.origin.x += headerWidth + groupHeaderSpacing;
+
+                    // Store header frame for drawing the collapsed group header
+                    NSRect headerRect = NSMakeRect(cellRect.origin.x - headerWidth - groupHeaderSpacing,
+                                                   cellRect.origin.y,
+                                                   headerWidth,
+                                                   cellRect.size.height);
+                    containingGroup.headerFrame = headerRect;
+
+                    [processedGroups addObject:containingGroup.identifier];
+                }
+
+                // Hide the cell by setting frame to zero and marking as hidden
+                [cell setFrame:NSZeroRect];
+                [cell setIsInOverflowMenu:YES];  // This effectively hides it
+                [cell removeCloseButtonTrackingRectFrom:self];
+                [cell removeCellTrackingRectFrom:self];
+                [[cell indicator] removeFromSuperview];
+                continue;
+            }
+
+            // Check if this cell is the first in a (non-collapsed) group and add header space
+            if (supportsGroupHeaders && containingGroup && !containingGroup.collapsed) {
+                if (![processedGroups containsObject:containingGroup.identifier]) {
+                    // This is the first cell of this group - add header space
+                    CGFloat headerWidth = [_style widthForGroupHeader:containingGroup];
+                    cellRect.origin.x += headerWidth + groupHeaderSpacing;
+
+                    // Store header frame in group for drawing
+                    NSRect headerRect = NSMakeRect(cellRect.origin.x - headerWidth - groupHeaderSpacing,
+                                                   cellRect.origin.y,
+                                                   headerWidth,
+                                                   cellRect.size.height);
+                    containingGroup.headerFrame = headerRect;
+
+                    [processedGroups addObject:containingGroup.identifier];
                 }
             }
 
