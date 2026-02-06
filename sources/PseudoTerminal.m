@@ -7838,6 +7838,9 @@ hidingToolbeltShouldResizeWindow:(BOOL)hidingToolbeltShouldResizeWindow
     for (PTYSession *session in self.allSessions) {
         [session didMoveSession];
     }
+
+    // Notify tab group manager about the reorder
+    [self notifyTabGroupManagerOfReorder];
 }
 
 - (PTYTabView *)tabView

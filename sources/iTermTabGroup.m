@@ -140,6 +140,29 @@ NSString *const kTabGroupArrangementTabGUIDs = @"Tab Group Tab GUIDs";
     [self postDidChangeNotification];
 }
 
+- (void)reorderTabsToMatch:(NSArray<NSString *> *)orderedTabGUIDs {
+    // Verify all GUIDs are valid
+    NSMutableArray<NSString *> *newOrder = [NSMutableArray array];
+    for (NSString *tabGUID in orderedTabGUIDs) {
+        if ([_tabGUIDs containsObject:tabGUID]) {
+            [newOrder addObject:tabGUID];
+        }
+    }
+
+    // Make sure we didn't lose any tabs
+    for (NSString *existingGUID in _tabGUIDs) {
+        if (![newOrder containsObject:existingGUID]) {
+            [newOrder addObject:existingGUID];
+        }
+    }
+
+    // Only update if the order actually changed
+    if (![_tabGUIDs isEqualToArray:newOrder]) {
+        [_tabGUIDs setArray:newOrder];
+        [self postDidChangeNotification];
+    }
+}
+
 - (void)removeAllTabs {
     if (_tabGUIDs.count > 0) {
         [_tabGUIDs removeAllObjects];

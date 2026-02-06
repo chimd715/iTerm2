@@ -203,7 +203,7 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 |---|------|------|------|
 | 4 | 드래그 앤 드롭으로 그룹에 탭 추가/제거 | ✅ 완료 | 탭 드래그 시 그룹 헤더 위에 드롭 처리 |
 | 5 | Arrangement 저장/복원 검증 | ✅ 완료 | 창 복원 시 그룹 유지 확인 |
-| 6 | 탭 순서 재정렬 | ⏳ 대기 | 같은 그룹 탭이 연속 배치되도록 |
+| 6 | 탭 순서 재정렬 | ✅ 완료 | 같은 그룹 탭이 연속 배치되도록 |
 
 ### 🟢 우선순위 낮음
 
@@ -254,16 +254,23 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 - **상태**: ✅ 완료
 - **시작일**: 2025-02-06
 - **완료일**: 2025-02-06
-- **커밋**: (커밋 후 업데이트)
+- **커밋**: 6246776c2
 - **변경 파일**:
   - `PseudoTerminal.m`: `populateArrangementWith:` 메서드에 탭 그룹 저장 추가, `loadArrangement:` 메서드에 탭 그룹 복원 추가
 
 ### Task 6: 탭 순서 재정렬
-- **상태**: ⏳ 대기
-- **시작일**: -
-- **완료일**: -
-- **커밋**: -
-- **변경 파일**: -
+- **상태**: ✅ 완료
+- **시작일**: 2025-02-06
+- **완료일**: 2025-02-06
+- **커밋**: (pending)
+- **변경 파일**:
+  - `iTermTabGroupManager.h`: 새 델리게이트 메서드 추가 (`moveTabAtIndex:toIndex:`, `indexOfTab:`)
+  - `iTermTabGroupManager.m`: `tabsWereReordered:` 구현 개선, `ensureGroupedTabsAreContiguous` 메서드 추가, `moveTab:withinGroupToIndex:` 메서드 추가
+  - `iTermTabGroup.h`: `reorderTabsToMatch:` 메서드 추가
+  - `iTermTabGroup.m`: `reorderTabsToMatch:` 메서드 구현
+  - `PseudoTerminal+TabGroups.h`: `notifyTabGroupManagerOfReorder`, `connectTabBarToTabGroups` 메서드 선언 추가
+  - `PseudoTerminal+TabGroups.m`: 델리게이트 메서드 구현, 그룹에 탭 추가 시 연속 배치 보장
+  - `PseudoTerminal.m`: `tabsDidReorder` 메서드에서 탭 그룹 매니저 알림 추가
 
 ### Task 7: 설정 UI
 - **상태**: ⏳ 대기

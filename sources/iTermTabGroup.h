@@ -74,6 +74,9 @@ extern NSString *const kTabGroupArrangementTabGUIDs;
 // Move a tab within the group
 - (void)moveTabWithGUID:(NSString *)tabGUID toIndex:(NSUInteger)newIndex;
 
+// Reorder tabs to match a new order (used when syncing with tab bar order)
+- (void)reorderTabsToMatch:(NSArray<NSString *> *)orderedTabGUIDs;
+
 // Remove all tabs from the group
 - (void)removeAllTabs;
 

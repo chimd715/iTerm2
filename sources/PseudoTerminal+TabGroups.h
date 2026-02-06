@@ -83,6 +83,14 @@ extern NSString *const TERMINAL_ARRANGEMENT_TAB_GROUPS;
 // Restore tab groups from arrangement
 - (void)restoreTabGroupsFromArrangement:(NSDictionary *)arrangement;
 
+#pragma mark - Tab Reordering
+
+// Notify the tab group manager that tabs were reordered
+- (void)notifyTabGroupManagerOfReorder;
+
+// Connect the tab bar to the tab group data source
+- (void)connectTabBarToTabGroups;
+
 @end
 
 NS_ASSUME_NONNULL_END

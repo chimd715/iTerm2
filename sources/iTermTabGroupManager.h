@@ -30,6 +30,12 @@ extern NSString *const kTabGroupManagerArrangementGroups;
 // Get all tabs
 - (NSArray<PTYTab *> *)tabGroupManagerAllTabs:(id)manager;
 
+// Move a tab to a new index in the tab bar (for keeping groups contiguous)
+- (void)tabGroupManager:(id)manager moveTabAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex;
+
+// Get the current index of a tab in the tab bar
+- (NSUInteger)tabGroupManager:(id)manager indexOfTab:(PTYTab *)tab;
+
 @end
 
 @interface iTermTabGroupManager : NSObject
@@ -131,6 +137,12 @@ extern NSString *const kTabGroupManagerArrangementGroups;
 
 // Called when tabs are reordered in the tab bar (via drag)
 - (void)tabsWereReordered:(NSArray<PTYTab *> *)tabs;
+
+// Ensure grouped tabs are contiguous in the tab bar (call after adding a tab to a group)
+- (void)ensureGroupedTabsAreContiguous;
+
+// Reorder a tab within its group
+- (void)moveTab:(PTYTab *)tab withinGroupToIndex:(NSUInteger)index;
 
 @end
 

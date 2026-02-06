@@ -326,9 +326,119 @@ NSString *const kTabGroupManagerArrangementGroups = @"Tab Groups";
 }
 
 - (void)tabsWereReordered:(NSArray<PTYTab *> *)tabs {
-    // When tabs are reordered via drag, we need to update group memberships
-    // This is a complex operation that depends on the UI implementation
-    // For now, we just ensure the notification is posted
+    // When tabs are reordered via drag, update the tab order within each group
+    // to match the new tab bar order
+    for (iTermTabGroup *group in _tabGroups) {
+        NSMutableArray<NSString *> *sortedTabGUIDs = [NSMutableArray array];
+
+        // Go through tabs in their new order and collect GUIDs that belong to this group
+        for (PTYTab *tab in tabs) {
+            NSString *tabGUID = tab.stringUniqueIdentifier;
+            if (_tabToGroupMap[tabGUID] == group) {
+                [sortedTabGUIDs addObject:tabGUID];
+            }
+        }
+
+        // Update the group's tab order if it changed
+        if (![group.tabGUIDs isEqualToArray:sortedTabGUIDs]) {
+            [group reorderTabsToMatch:sortedTabGUIDs];
+        }
+    }
+
+    [self postDidChangeNotification];
+}
+
+- (void)ensureGroupedTabsAreContiguous {
+    // For each group, move its tabs so they are contiguous in the tab bar
+    // This maintains the tab's relative position within the group
+
+    NSArray<PTYTab *> *allTabs = [self.delegate tabGroupManagerAllTabs:self];
+    if (allTabs.count == 0) {
+        return;
+    }
+
+    for (iTermTabGroup *group in _tabGroups) {
+        if (group.tabCount < 2) {
+            continue;
+        }
+
+        // Find the indices of all tabs in this group
+        NSMutableArray<NSNumber *> *groupTabIndices = [NSMutableArray array];
+        for (NSString *tabGUID in group.tabGUIDs) {
+            PTYTab *tab = [self.delegate tabGroupManager:self tabWithGUID:tabGUID];
+            if (tab) {
+                NSUInteger index = [self.delegate tabGroupManager:self indexOfTab:tab];
+                if (index != NSNotFound) {
+                    [groupTabIndices addObject:@(index)];
+                }
+            }
+        }
+
+        if (groupTabIndices.count < 2) {
+            continue;
+        }
+
+        // Sort indices
+        [groupTabIndices sortUsingSelector:@selector(compare:)];
+
+        // Check if tabs are contiguous
+        BOOL isContiguous = YES;
+        NSUInteger expectedIndex = [groupTabIndices[0] unsignedIntegerValue];
+        for (NSNumber *indexNum in groupTabIndices) {
+            if ([indexNum unsignedIntegerValue] != expectedIndex) {
+                isContiguous = NO;
+                break;
+            }
+            expectedIndex++;
+        }
+
+        if (!isContiguous) {
+            // Move tabs to make them contiguous
+            // Place them starting at the position of the first tab
+            NSUInteger targetIndex = [groupTabIndices[0] unsignedIntegerValue];
+
+            for (NSUInteger i = 1; i < groupTabIndices.count; i++) {
+                NSUInteger currentIndex = [groupTabIndices[i] unsignedIntegerValue];
+                NSUInteger desiredIndex = targetIndex + i;
+
+                if (currentIndex != desiredIndex) {
+                    // Need to move this tab
+                    // Account for index shifts when moving
+                    NSUInteger adjustedFrom = currentIndex;
+                    NSUInteger adjustedTo = desiredIndex;
+
+                    [self.delegate tabGroupManager:self moveTabAtIndex:adjustedFrom toIndex:adjustedTo];
+
+                    // Refresh indices after the move
+                    allTabs = [self.delegate tabGroupManagerAllTabs:self];
+                    [groupTabIndices removeAllObjects];
+                    for (NSString *tabGUID in group.tabGUIDs) {
+                        PTYTab *tab = [self.delegate tabGroupManager:self tabWithGUID:tabGUID];
+                        if (tab) {
+                            NSUInteger index = [self.delegate tabGroupManager:self indexOfTab:tab];
+                            if (index != NSNotFound) {
+                                [groupTabIndices addObject:@(index)];
+                            }
+                        }
+                    }
+                    [groupTabIndices sortUsingSelector:@selector(compare:)];
+                }
+            }
+        }
+    }
+}
+
+- (void)moveTab:(PTYTab *)tab withinGroupToIndex:(NSUInteger)index {
+    NSString *tabGUID = tab.stringUniqueIdentifier;
+    iTermTabGroup *group = _tabToGroupMap[tabGUID];
+
+    if (!group) {
+        return;
+    }
+
+    // Update position within the group's internal list
+    [group moveTabWithGUID:tabGUID toIndex:index];
+
     [self postDidChangeNotification];
 }
 

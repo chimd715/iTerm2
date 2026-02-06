@@ -65,6 +65,9 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
                                                                color:groupColor
                                                                 tabs:tabs];
 
+    // Ensure grouped tabs stay contiguous in the tab bar
+    [self.tabGroupManager ensureGroupedTabsAreContiguous];
+
     // Update the tab bar
     [self updateTabBarForTabGroups];
 
@@ -75,6 +78,7 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
     PTYTab *currentTab = [self currentTab];
     if (currentTab && group) {
         [self.tabGroupManager addTab:currentTab toGroup:group];
+        [self.tabGroupManager ensureGroupedTabsAreContiguous];
         [self updateTabBarForTabGroups];
     }
 }
@@ -394,6 +398,24 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
                                                         object:self.tabGroupManager];
 }
 
+#pragma mark - iTermTabGroupManagerDelegate (Tab Reordering)
+
+- (void)tabGroupManager:(id)manager moveTabAtIndex:(NSUInteger)fromIndex toIndex:(NSUInteger)toIndex {
+    if (fromIndex == toIndex) {
+        return;
+    }
+    [self moveTabAtIndex:fromIndex toIndex:toIndex];
+}
+
+- (NSUInteger)tabGroupManager:(id)manager indexOfTab:(PTYTab *)tab {
+    return [self indexOfTab:tab];
+}
+
+- (void)notifyTabGroupManagerOfReorder {
+    NSArray<PTYTab *> *tabs = [self tabs];
+    [self.tabGroupManager tabsWereReordered:tabs];
+}
+
 - (NSView *)tabBarView {
     // Return the tab bar control view
     return self.contentView.tabBarControl;
@@ -507,6 +529,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 
         // Add to new group
         [self.tabGroupManager addTab:tabToAdd toGroup:itermGroup];
+
+        // Ensure grouped tabs stay contiguous
+        [self.tabGroupManager ensureGroupedTabsAreContiguous];
+
         [tabBarControl update];
     }
 }
