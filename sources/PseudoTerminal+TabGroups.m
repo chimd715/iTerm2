@@ -7,6 +7,7 @@
 
 #import "PseudoTerminal+TabGroups.h"
 #import "PseudoTerminal+Private.h"
+#import "iTermPreferences.h"
 #import "iTermTabGroup.h"
 #import "iTermTabGroupManager.h"
 #import "iTermTabGroupColorPickerViewController.h"
@@ -23,6 +24,12 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 
 @implementation PseudoTerminal (TabGroups)
 
+#pragma mark - Tab Groups Enabled Check
+
+- (BOOL)tabGroupsEnabled {
+    return [iTermPreferences boolForKey:kPreferenceKeyEnableTabGroups];
+}
+
 #pragma mark - Tab Group Manager Accessor
 
 - (iTermTabGroupManager *)tabGroupManager {
@@ -38,6 +45,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 #pragma mark - Tab Group Management
 
 - (iTermTabGroup *)createTabGroupWithSelectedTabs {
+    if (![self tabGroupsEnabled]) {
+        return nil;
+    }
+
     PTYTab *currentTab = [self currentTab];
     if (!currentTab) {
         return nil;
@@ -54,6 +65,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 - (iTermTabGroup *)createTabGroupWithTabs:(NSArray<PTYTab *> *)tabs
                                      name:(NSString *)name
                                     color:(NSColor *)color {
+    if (![self tabGroupsEnabled]) {
+        return nil;
+    }
+
     if (tabs.count == 0) {
         return nil;
     }
@@ -226,6 +241,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 
 - (NSMenu *)tabGroupContextMenuForTab:(PTYTab *)tab {
     NSMenu *menu = [[NSMenu alloc] init];
+
+    if (![self tabGroupsEnabled]) {
+        return menu;
+    }
 
     iTermTabGroup *currentGroup = [self.tabGroupManager groupForTab:tab];
 
@@ -424,6 +443,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 #pragma mark - PSMTabGroupDataSource
 
 - (NSArray<PSMTabGroup *> *)tabGroupsForTabBarControl:(PSMTabBarControl *)tabBarControl {
+    if (![self tabGroupsEnabled]) {
+        return @[];
+    }
+
     NSMutableArray<PSMTabGroup *> *psmGroups = [NSMutableArray array];
 
     for (iTermTabGroup *itermGroup in self.tabGroupManager.tabGroups) {
@@ -437,6 +460,10 @@ static const void *kTabGroupManagerKey = &kTabGroupManagerKey;
 }
 
 - (PSMTabGroup *)tabBarControl:(PSMTabBarControl *)tabBarControl groupForTabWithIdentifier:(id)identifier {
+    if (![self tabGroupsEnabled]) {
+        return nil;
+    }
+
     // identifier is the tab's identifier (PTYTab.identifier)
     NSString *tabGUID = nil;
 

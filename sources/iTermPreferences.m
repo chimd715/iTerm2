@@ -208,6 +208,7 @@ NSString *const kPreferenceKeySizeChangesAffectProfile = @"Size Changes Affect P
 NSString *const kPreferenceKeyActions = @"Actions";
 NSString *const kPreferenceKeySnippets = @"Snippets";
 NSString *const kPreferenceKeyHTMLTabTitles = @"HTMLTabTitles";
+NSString *const kPreferenceKeyEnableTabGroups = @"EnableTabGroups";
 NSString *const kPreferenceKeyDisableTransparencyForKeyWindow = @"DisableTransparencyForKeyWindow";
 NSString *const kPreferenceKeyNeverBlockSystemShutdown = @"NeverBlockSystemShutdown";
 
@@ -662,6 +663,7 @@ static NSString *sPreviousVersion;
                   kPreferenceKeyDefaultToolbeltWidth: @250,
                   kPreferenceKeySizeChangesAffectProfile: @NO,
                   kPreferenceKeyHTMLTabTitles: @NO,
+                  kPreferenceKeyEnableTabGroups: @NO,
 
                   kPreferenceKeyDisableTransparencyForKeyWindow: @NO,
                   kPreferenceKeyNeverBlockSystemShutdown: @NO

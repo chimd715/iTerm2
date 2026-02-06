@@ -209,7 +209,7 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 
 | # | 작업 | 상태 | 설명 |
 |---|------|------|------|
-| 7 | 설정 UI | ⏳ 대기 | 탭 그룹 기능 활성화/비활성화 옵션 |
+| 7 | 설정 UI | ✅ 완료 | 탭 그룹 기능 활성화/비활성화 옵션 (nib 파일 수정 필요) |
 
 ---
 
@@ -262,7 +262,7 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
 - **상태**: ✅ 완료
 - **시작일**: 2025-02-06
 - **완료일**: 2025-02-06
-- **커밋**: (pending)
+- **커밋**: 73d795331
 - **변경 파일**:
   - `iTermTabGroupManager.h`: 새 델리게이트 메서드 추가 (`moveTabAtIndex:toIndex:`, `indexOfTab:`)
   - `iTermTabGroupManager.m`: `tabsWereReordered:` 구현 개선, `ensureGroupedTabsAreContiguous` 메서드 추가, `moveTab:withinGroupToIndex:` 메서드 추가
@@ -273,11 +273,17 @@ static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
   - `PseudoTerminal.m`: `tabsDidReorder` 메서드에서 탭 그룹 매니저 알림 추가
 
 ### Task 7: 설정 UI
-- **상태**: ⏳ 대기
-- **시작일**: -
-- **완료일**: -
-- **커밋**: -
-- **변경 파일**: -
+- **상태**: ✅ 완료 (nib 파일 수동 수정 필요)
+- **시작일**: 2025-02-06
+- **완료일**: 2025-02-06
+- **커밋**: (pending)
+- **변경 파일**:
+  - `iTermPreferences.h`: `kPreferenceKeyEnableTabGroups` 상수 추가
+  - `iTermPreferences.m`: 기본값 `NO`로 설정, 키 정의 추가
+  - `AppearancePreferencesViewController.m`: `_enableTabGroups` IBOutlet 및 컨트롤 정의 추가
+  - `PseudoTerminal+TabGroups.h`: `tabGroupsEnabled` 프로퍼티 선언 추가
+  - `PseudoTerminal+TabGroups.m`: `tabGroupsEnabled` 구현, 관련 메서드에 체크 추가
+- **참고**: Interface Builder에서 `Appearance.xib`에 체크박스 추가하고 `_enableTabGroups` 아웃렛에 연결 필요
 
 ---
 

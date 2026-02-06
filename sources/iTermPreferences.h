@@ -247,6 +247,7 @@ extern NSString *const kPreferenceKeySeparateStatusBarsPerPane;
 extern NSString *const kPreferenceKeyHTMLTabTitles;
 extern NSString *const kPreferenceKeySideMargins;
 extern NSString *const kPreferenceKeyTopBottomMargins;
+extern NSString *const kPreferenceKeyEnableTabGroups;
 
 // Keys
 extern NSString *const kPreferenceKeyControlRemapping_Deprecated;  // Deprecated

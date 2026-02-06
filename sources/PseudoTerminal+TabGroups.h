@@ -17,6 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface PseudoTerminal (TabGroups) <PSMTabGroupDataSource>
 
+// Check if tab groups feature is enabled in preferences
+@property (nonatomic, readonly) BOOL tabGroupsEnabled;
+
 // The tab group manager for this window
 @property (nonatomic, readonly) iTermTabGroupManager *tabGroupManager;
 
