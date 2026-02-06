@@ -14,6 +14,7 @@
 #import "PSMRolloverButton.h"
 #import "PSMTabBarCell.h"
 #import "PSMTabBarControl.h"
+#import "PSMTabGroup.h"
 #import <objc/runtime.h>
 
 #define kPSMMetalObjectCounterRadius 7.0
@@ -1231,6 +1232,10 @@ const void *PSMTabStyleDarkColorKey = "dark";
     }
 
     const BOOL attachedToTitleBar = [[bar.delegate tabView:bar valueOfOption:PSMTabBarControlOptionAttachedToTitleBar] boolValue];
+
+    // Draw tab group headers and underlines
+    [self drawTabGroupsForBar:bar inRect:rect clipRect:clipRect];
+
     // draw cells
     for (int i = 0; i < 2; i++) {
         NSInteger stateToDraw = (i == 0 ? NSControlStateValueOn : NSControlStateValueOff);
@@ -1265,6 +1270,60 @@ const void *PSMTabStyleDarkColorKey = "dark";
     for (PSMTabBarCell *cell in [bar cells]) {
         if (![cell isInOverflowMenu] && NSIntersectsRect([cell frame], clipRect) && cell.state == NSControlStateValueOn) {
             [cell drawPostHocDecorationsOnSelectedCell:cell tabBarControl:bar];
+        }
+    }
+}
+
+- (void)drawTabGroupsForBar:(PSMTabBarControl *)bar inRect:(NSRect)rect clipRect:(NSRect)clipRect {
+    id<PSMTabGroupDataSource> dataSource = bar.tabGroupDataSource;
+    if (!dataSource) {
+        return;
+    }
+
+    NSArray<PSMTabGroup *> *groups = [dataSource tabGroupsForTabBarControl:bar];
+    if (groups.count == 0) {
+        return;
+    }
+
+    for (PSMTabGroup *group in groups) {
+        // Find the first and last cells in this group
+        NSRect firstCellRect = NSZeroRect;
+        NSRect lastCellRect = NSZeroRect;
+        BOOL foundFirst = NO;
+
+        for (PSMTabBarCell *cell in [bar cells]) {
+            if ([cell isInOverflowMenu]) {
+                continue;
+            }
+
+            id tabIdentifier = [[cell representedObject] identifier];
+            if ([group containsTabIdentifier:tabIdentifier]) {
+                if (!foundFirst) {
+                    firstCellRect = [cell frame];
+                    foundFirst = YES;
+                }
+                lastCellRect = [cell frame];
+            }
+        }
+
+        if (!foundFirst) {
+            continue;
+        }
+
+        // Calculate group header frame dynamically based on first cell position
+        CGFloat headerWidth = [self widthForGroupHeader:group];
+        CGFloat headerHeight = [self groupHeaderHeight];
+        NSRect headerRect = NSMakeRect(NSMinX(firstCellRect),
+                                        NSMinY(firstCellRect) - headerHeight - [self groupHeaderToTabSpacing],
+                                        headerWidth,
+                                        headerHeight);
+
+        // Draw group header above the first tab
+        [self drawGroupHeaderForGroup:group inRect:headerRect collapsed:group.collapsed];
+
+        // Draw underline beneath grouped tabs
+        if (!group.collapsed && group.color) {
+            [self drawGroupUnderlineForGroup:group fromRect:firstCellRect toRect:lastCellRect];
         }
     }
 }
@@ -1312,6 +1371,159 @@ const void *PSMTabStyleDarkColorKey = "dark";
             // it's the same surface.
             return NO;
     }
+}
+
+#pragma mark - Tab Group Drawing
+
+static const CGFloat kPSMTabGroupHeaderHeight = 20.0;
+static const CGFloat kPSMTabGroupHeaderPadding = 6.0;
+static const CGFloat kPSMTabGroupColorDotSize = 8.0;
+static const CGFloat kPSMTabGroupUnderlineHeight = 3.0;
+static const CGFloat kPSMTabGroupHeaderToTabSpacing = 2.0;
+
+- (void)drawGroupHeaderForGroup:(PSMTabGroup *)group inRect:(NSRect)rect collapsed:(BOOL)collapsed {
+    if (!group) {
+        return;
+    }
+
+    NSColor *groupColor = group.color ?: [PSMTabGroup colorForType:PSMTabGroupColorTypeGrey];
+
+    // Draw rounded rect background (Chrome-like pill shape)
+    NSRect headerRect = NSInsetRect(rect, 2, 2);
+    NSBezierPath *headerPath = [NSBezierPath bezierPathWithRoundedRect:headerRect
+                                                              xRadius:4.0
+                                                              yRadius:4.0];
+
+    // Background color - slightly transparent version of group color
+    [[groupColor colorWithAlphaComponent:0.2] set];
+    [headerPath fill];
+
+    // Draw color dot on the left
+    CGFloat dotX = NSMinX(headerRect) + kPSMTabGroupHeaderPadding;
+    CGFloat dotY = NSMidY(headerRect) - kPSMTabGroupColorDotSize / 2.0;
+    NSRect dotRect = NSMakeRect(dotX, dotY, kPSMTabGroupColorDotSize, kPSMTabGroupColorDotSize);
+    NSBezierPath *dotPath = [NSBezierPath bezierPathWithOvalInRect:dotRect];
+    [groupColor set];
+    [dotPath fill];
+
+    // Draw group name
+    NSString *displayName = group.name ?: @"";
+    if (collapsed && group.tabCount > 0) {
+        // Show tab count when collapsed
+        displayName = [NSString stringWithFormat:@"%@ (%lu)", displayName, (unsigned long)group.tabCount];
+    }
+
+    if (displayName.length > 0) {
+        CGFloat textX = dotX + kPSMTabGroupColorDotSize + 4;
+        CGFloat maxTextWidth = NSMaxX(headerRect) - textX - kPSMTabGroupHeaderPadding;
+
+        NSDictionary *attributes = @{
+            NSFontAttributeName: [NSFont systemFontOfSize:11.0 weight:NSFontWeightMedium],
+            NSForegroundColorAttributeName: [self groupHeaderTextColor]
+        };
+
+        NSSize textSize = [displayName sizeWithAttributes:attributes];
+        CGFloat textY = NSMidY(headerRect) - textSize.height / 2.0;
+
+        NSRect textRect = NSMakeRect(textX, textY, MIN(textSize.width, maxTextWidth), textSize.height);
+
+        // Truncate if necessary
+        NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+        paragraphStyle.lineBreakMode = NSLineBreakByTruncatingTail;
+        NSMutableDictionary *truncAttributes = [attributes mutableCopy];
+        truncAttributes[NSParagraphStyleAttributeName] = paragraphStyle;
+
+        [displayName drawInRect:textRect withAttributes:truncAttributes];
+    }
+
+    // Draw collapse indicator (arrow)
+    [self drawCollapseIndicatorInRect:headerRect collapsed:collapsed];
+}
+
+- (void)drawCollapseIndicatorInRect:(NSRect)headerRect collapsed:(BOOL)collapsed {
+    CGFloat arrowSize = 6.0;
+    CGFloat arrowX = NSMaxX(headerRect) - kPSMTabGroupHeaderPadding - arrowSize;
+    CGFloat arrowY = NSMidY(headerRect);
+
+    NSBezierPath *arrowPath = [NSBezierPath bezierPath];
+
+    if (collapsed) {
+        // Right-pointing arrow (▶)
+        [arrowPath moveToPoint:NSMakePoint(arrowX, arrowY - arrowSize/2)];
+        [arrowPath lineToPoint:NSMakePoint(arrowX + arrowSize, arrowY)];
+        [arrowPath lineToPoint:NSMakePoint(arrowX, arrowY + arrowSize/2)];
+    } else {
+        // Down-pointing arrow (▼)
+        [arrowPath moveToPoint:NSMakePoint(arrowX, arrowY - arrowSize/4)];
+        [arrowPath lineToPoint:NSMakePoint(arrowX + arrowSize, arrowY - arrowSize/4)];
+        [arrowPath lineToPoint:NSMakePoint(arrowX + arrowSize/2, arrowY + arrowSize/2)];
+    }
+    [arrowPath closePath];
+
+    [[self groupHeaderTextColor] set];
+    [arrowPath fill];
+}
+
+- (NSColor *)groupHeaderTextColor {
+    const BOOL keyMainAndActive = self.windowIsMainAndAppIsActive;
+    if (keyMainAndActive) {
+        return [NSColor labelColor];
+    } else {
+        return [NSColor secondaryLabelColor];
+    }
+}
+
+- (void)drawGroupUnderlineForGroup:(PSMTabGroup *)group fromRect:(NSRect)startRect toRect:(NSRect)endRect {
+    if (!group || !group.color) {
+        return;
+    }
+
+    NSColor *groupColor = group.color;
+
+    // Draw underline beneath all tabs in the group
+    CGFloat underlineY = NSMaxY(startRect) - kPSMTabGroupUnderlineHeight - 1;
+    CGFloat underlineStartX = NSMinX(startRect);
+    CGFloat underlineEndX = NSMaxX(endRect);
+
+    NSRect underlineRect = NSMakeRect(underlineStartX,
+                                       underlineY,
+                                       underlineEndX - underlineStartX,
+                                       kPSMTabGroupUnderlineHeight);
+
+    [groupColor set];
+    NSRectFill(underlineRect);
+}
+
+- (CGFloat)groupHeaderHeight {
+    return kPSMTabGroupHeaderHeight;
+}
+
+- (CGFloat)widthForGroupHeader:(PSMTabGroup *)group {
+    if (!group) {
+        return 0;
+    }
+
+    // Color dot + padding + text + padding + collapse arrow
+    CGFloat width = kPSMTabGroupHeaderPadding + kPSMTabGroupColorDotSize + 4;
+
+    NSString *displayName = group.name ?: @"";
+    if (displayName.length > 0) {
+        NSDictionary *attributes = @{
+            NSFontAttributeName: [NSFont systemFontOfSize:11.0 weight:NSFontWeightMedium]
+        };
+        NSSize textSize = [displayName sizeWithAttributes:attributes];
+        width += textSize.width;
+    }
+
+    width += kPSMTabGroupHeaderPadding + 8; // arrow space
+    width += 4; // extra padding
+
+    // Minimum width
+    return MAX(width, 60);
+}
+
+- (CGFloat)groupHeaderToTabSpacing {
+    return kPSMTabGroupHeaderToTabSpacing;
 }
 
 @end

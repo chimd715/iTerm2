@@ -16,6 +16,7 @@
 #import "PSMTabStyle.h"
 #import "PSMYosemiteTabStyle.h"
 #import "PSMTabDragAssistant.h"
+#import "PSMTabGroup.h"
 #import "PTYTask.h"
 #import "NSColor+PSM.h"
 #import "NSWindow+PSM.h"

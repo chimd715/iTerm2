@@ -13,6 +13,8 @@ Protocol to be observed by all style delegate objects.  These objects handle the
 #import "PSMTabBarCell.h"
 #import "PSMTabBarControl.h"
 
+@class PSMTabGroup;
+
 @protocol PSMTabStyle <NSObject>
 
 @property(nonatomic, weak) PSMTabBarControl *tabBar;
@@ -85,6 +87,25 @@ Protocol to be observed by all style delegate objects.  These objects handle the
 @property (nonatomic, readonly) NSSize addTabButtonSize;
 @property (nonatomic, readonly) CGFloat tabBarHeight;
 @property (nonatomic) PSMTabBarOrientation orientation;
+
+#pragma mark - Tab Group Drawing (Optional)
+
+@optional
+
+// Draw the group header (colored chip with name)
+- (void)drawGroupHeaderForGroup:(PSMTabGroup *)group inRect:(NSRect)rect collapsed:(BOOL)collapsed;
+
+// Draw the colored underline beneath grouped tabs
+- (void)drawGroupUnderlineForGroup:(PSMTabGroup *)group fromRect:(NSRect)startRect toRect:(NSRect)endRect;
+
+// Height of the group header area
+- (CGFloat)groupHeaderHeight;
+
+// Width needed for group header
+- (CGFloat)widthForGroupHeader:(PSMTabGroup *)group;
+
+// Spacing between group header and first tab
+- (CGFloat)groupHeaderToTabSpacing;
 
 @end
 

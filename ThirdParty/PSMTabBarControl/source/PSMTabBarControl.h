@@ -10,6 +10,7 @@
 
 #import "PSMCachedTitle.h"
 #import "PSMProgressIndicator.h"
+#import "PSMTabGroup.h"
 
 // Set to 1 to enable drag performance debugging (timestamp overlay and NSLog statements)
 #define PSM_DEBUG_DRAG_PERFORMANCE 0
@@ -66,6 +67,50 @@ extern PSMTabBarControlOptionKey PSMTabBarControlOptionMinimalNonSelectedColored
 extern PSMTabBarControlOptionKey PSMTabBarControlOptionTextColor;  // NSColor
 extern PSMTabBarControlOptionKey PSMTabBarControlOptionLightModeInactiveTabDarkness;  // NSNumber in 0-1
 extern PSMTabBarControlOptionKey PSMTabBarControlOptionDarkModeInactiveTabDarkness;  // NSNumber in 0-1
+
+#pragma mark - Tab Group Support
+
+// Tab group colors (Chrome-like palette)
+typedef NS_ENUM(NSInteger, PSMTabGroupColor) {
+    PSMTabGroupColorGrey = 0,
+    PSMTabGroupColorBlue,
+    PSMTabGroupColorRed,
+    PSMTabGroupColorYellow,
+    PSMTabGroupColorGreen,
+    PSMTabGroupColorPink,
+    PSMTabGroupColorPurple,
+    PSMTabGroupColorCyan,
+    PSMTabGroupColorCount
+};
+
+// Forward declaration for tab group
+@class PSMTabGroup;
+
+// Protocol for providing tab group information
+@protocol PSMTabGroupDataSource <NSObject>
+@required
+// Returns all tab groups in display order
+- (NSArray<PSMTabGroup *> *)tabGroupsForTabBarControl:(PSMTabBarControl *)tabBarControl;
+// Returns the group containing the given tab identifier, or nil if ungrouped
+- (PSMTabGroup *)tabBarControl:(PSMTabBarControl *)tabBarControl groupForTabWithIdentifier:(id)identifier;
+@optional
+// Called when user clicks on group header to toggle collapse
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl didClickGroupHeader:(PSMTabGroup *)group;
+// Called when user wants to create a new group from context menu
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl createGroupForTabWithIdentifier:(id)identifier;
+// Called when user removes tab from group
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl removeTabWithIdentifier:(id)identifier fromGroup:(PSMTabGroup *)group;
+// Called when user ungroups all tabs in a group
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl ungroupAllTabsInGroup:(PSMTabGroup *)group;
+// Called when user closes entire group
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl closeGroup:(PSMTabGroup *)group;
+// Called when user wants to rename a group
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl renameGroup:(PSMTabGroup *)group;
+// Called when user wants to change group color
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl changeColorOfGroup:(PSMTabGroup *)group;
+// Called when tab is dragged into a group
+- (void)tabBarControl:(PSMTabBarControl *)tabBarControl addTabWithIdentifier:(id)identifier toGroup:(PSMTabGroup *)group;
+@end
 
 // Tab views controlled by the tab bar may expect this protocol to be conformed to by their delegate.
 @protocol PSMTabViewDelegate<NSTabViewDelegate>
@@ -209,6 +254,9 @@ typedef NS_ENUM(int, PSMTabPosition) {
 @property(nonatomic, retain) id partnerView;
 @property(nonatomic, readonly) NSButton *overflowPopUpButton;
 @property(nonatomic, assign) BOOL ignoreTrailingParentheticalsForSmartTruncation;
+
+// Tab group support
+@property(nonatomic, weak) id<PSMTabGroupDataSource> tabGroupDataSource;
 
 // control characteristics
 + (NSBundle *)bundle;
